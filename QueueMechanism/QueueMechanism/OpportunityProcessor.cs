@@ -1,52 +1,37 @@
-﻿using System.Collections.Concurrent;
+﻿namespace QueueMechanism;
 
-namespace QueueMechanism;
-
-public class OpportunityProcessor
+public class OpportunityProcessor<T, T1> where T : new()
 {
-    private readonly ConcurrentQueue<int> _queue = new();
-    private readonly HashSet<int> _processingSet = new();
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly Opportunity _opportunity = new();
+    private readonly TaskBox _taskBox = new();
+    private readonly SemaphoreSlim _processSemaphore = new(1, 1);
 
-    public async Task Enqueue(int opportunityId)
+    public async Task Enqueue(T uniqueId, Func<int, Task<T1>> func)
     {
-        await _semaphore.WaitAsync();
-        try
-        {
-            //if (!_processingSet.Contains(opportunityId))
-            //{
-                _queue.Enqueue(opportunityId);
-                _processingSet.Add(opportunityId);
-            //}
-        }
-        finally
-        {
-            _semaphore.Release();
-        }
-        _ = ProcessQueue();
+        await _taskBox.Enqueue(uniqueId.GetHashCode());
+        _ = ProcessQueue(func);
     }
 
-    private async Task ProcessQueue()
+    private async Task ProcessQueue(Func<int, Task<T1>> func)
     {
-        while (_queue.TryDequeue(out int opportunityId))
+        await _processSemaphore.WaitAsync();
+        try
         {
-            try
+            while (_taskBox.TryDequeue(out int opportunityId))
             {
-                await _opportunity.Process(opportunityId);
-            }
-            finally
-            {
-                await _semaphore.WaitAsync();
                 try
                 {
-                    _processingSet.Remove(opportunityId);
+                    await func(opportunityId);
                 }
                 finally
                 {
-                    _semaphore.Release();
+                    await _taskBox.MarkAsProcessed(opportunityId);
                 }
             }
         }
+        finally
+        {
+            _processSemaphore.Release();
+        }
     }
 }
+
