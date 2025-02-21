@@ -7,7 +7,7 @@ public class PricingIntegration
     {
         Repository repository = Repositoris.GetRepository(opportunityId);
 
-        Console.WriteLine(repository.GetHashCode());
+        Console.WriteLine($"Has unique code for Repositoy - {repository.GetHashCode()}");
 
         Console.WriteLine($"Started for opportunityId - {opportunityId}");
 
@@ -15,7 +15,7 @@ public class PricingIntegration
 
         Console.WriteLine($"Number before update - {number} - for opportunityId - {opportunityId} ");
 
-        int result = await Calculate(number); // Simulating async work
+        int result = await Calculate(number);
 
         Console.WriteLine($"Number after update - {result} - for opportunityId - {opportunityId} ");
 
@@ -30,7 +30,7 @@ public class PricingIntegration
     {
         number++;
 
-        await Task.Delay(2000);
+        await Task.Delay(500);
 
         return number;
     }

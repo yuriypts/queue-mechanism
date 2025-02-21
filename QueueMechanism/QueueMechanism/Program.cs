@@ -1,48 +1,25 @@
 ﻿using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace QueueMechanism;
 
 public class Program
 {
     private static PricingIntegration _pricingIntegration = new();
-    private static ConcurrentBag<Opportunity> _opportunities = new()
-    {
-        new Opportunity
-        {
-            OpportunityId = 1,
-            Func = (int opportunityId) => _pricingIntegration.ProcessSolaceMessage(opportunityId)
-        },
-        new Opportunity
-        {
-            OpportunityId = 1,
-            Func = (int opportunityId) => _pricingIntegration.ProcessSolaceMessage(opportunityId)
-        },
-        new Opportunity
-        {
-            OpportunityId = 2,
-            Func = (int opportunityId) => _pricingIntegration.ProcessSolaceMessage(opportunityId)
-        },
-        new Opportunity
-        {
-            OpportunityId = 3,
-            Func = (int opportunityId) => _pricingIntegration.ProcessSolaceMessage(opportunityId)
-        },
-        new Opportunity
-        {
-            OpportunityId = 3,
-            Func = (int opportunityId) => _pricingIntegration.ProcessSolaceMessage(opportunityId)
-        }
-    };
 
     static async Task Main(string[] args)
     {
+        ConcurrentBag<Opportunity> _opportunities = Opportunities.GetOpportunities(_pricingIntegration);
         var processor = new OpportunityProcessor<int, bool>();
+
+        Stopwatch sw = new();
+        sw.Start();
 
         // 1 Approach - With Queue Mechanism (Task WhenAll)
         //List<Task> tasks = new();
         //foreach (Opportunity opportunity in _opportunities)
         //{
-        //    tasks.Add(processor.Enqueue(opportunity.OpportunityId, async () => await opportunity.Func()));
+        //    tasks.Add(processor.Enqueue(opportunity.OpportunityId, async (int opportunityId) => await opportunity.Func(opportunityId)));
         //}
         //await Task.WhenAll(tasks);
 
@@ -58,7 +35,8 @@ public class Program
             await _pricingIntegration.ProcessSolaceMessage(opportunity.OpportunityId);
         });
 
-        await Task.Delay(11000); // Ensure all tasks are completed
+        sw.Stop();
+        Console.WriteLine($"Running time - {sw.Elapsed}");
 
         foreach (Repository repository in Repositoris.GetRepositories())
         {
