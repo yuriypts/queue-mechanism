@@ -10,19 +10,19 @@ public class OpportunityProcessor<T, T1> where T : new()
     // _queues maintains a queue for each unique object (by HashCode), ensuring tasks are executed in order
     private readonly ConcurrentDictionary<int, ConcurrentQueue<Func<Task<T1>>>> _queues = new();
 
-    public async Task Enqueue(T uniqueId, Func<int, Task<T1>> func)
+    public async Task Enqueue(T value, Func<T, Task<T1>> func)
     {
-        if (uniqueId == null)
+        if (value == null)
         {
-            throw new ArgumentNullException(nameof(uniqueId));
+            throw new ArgumentNullException(nameof(value));
         }
 
-        int uniqueHashCode = uniqueId.GetHashCode();
+        int uniqueHashCode = value.GetHashCode();
 
         ConcurrentQueue<Func<Task<T1>>> queue = _queues.GetOrAdd(uniqueHashCode, _ => new ConcurrentQueue<Func<Task<T1>>>());
         SemaphoreSlim semaphore = _locks.GetOrAdd(uniqueHashCode, _ => new SemaphoreSlim(1, 1));
 
-        queue.Enqueue(async () => await func(uniqueHashCode));
+        queue.Enqueue(async () => await func(value));
 
         await ProcessQueue(semaphore, queue);
     }

@@ -34,11 +34,6 @@ public static class Opportunities
                 OpportunityId = 2,
                 Func = async (int opportunityId) => await pricingIntegration.ProcessSolaceMessage(opportunityId)
             },
-             new Opportunity
-            {
-                OpportunityId = 2,
-                Func = async (int opportunityId) => await pricingIntegration.ProcessSolaceMessage(opportunityId)
-            },
             new Opportunity
             {
                 OpportunityId = 3,

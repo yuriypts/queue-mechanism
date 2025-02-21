@@ -16,12 +16,12 @@ public class Program
         sw.Start();
 
         // 1 Approach - With Queue Mechanism (Task WhenAll)
-        //List<Task> tasks = new();
-        //foreach (Opportunity opportunity in _opportunities)
-        //{
-        //    tasks.Add(processor.Enqueue(opportunity.OpportunityId, async (int opportunityId) => await opportunity.Func(opportunityId)));
-        //}
-        //await Task.WhenAll(tasks);
+        List<Task> tasks = new();
+        foreach (Opportunity opportunity in _opportunities)
+        {
+            tasks.Add(processor.Enqueue(opportunity.OpportunityId, async (int opportunityId) => await opportunity.Func(opportunityId)));
+        }
+        await Task.WhenAll(tasks);
 
         // 2 - Approach - With Queue Mechanism (Parallel ForEach)
         //await Parallel.ForEachAsync(_opportunities, async (Opportunity opportunity, CancellationToken cancellationToken) =>
@@ -30,10 +30,10 @@ public class Program
         //});
 
         // 3 - Approach - No Queue Mechanism
-        await Parallel.ForEachAsync(_opportunities, async (Opportunity opportunity, CancellationToken cancellationToken) =>
-        {
-            await _pricingIntegration.ProcessSolaceMessage(opportunity.OpportunityId);
-        });
+        //await Parallel.ForEachAsync(_opportunities, async (Opportunity opportunity, CancellationToken cancellationToken) =>
+        //{
+        //    await _pricingIntegration.ProcessSolaceMessage(opportunity.OpportunityId);
+        //});
 
         sw.Stop();
         Console.WriteLine($"Running time - {sw.Elapsed}");
