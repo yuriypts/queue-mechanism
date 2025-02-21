@@ -10,7 +10,7 @@ public class OpportunityProcessor<T, T1> where T : new()
     // _queues maintains a queue for each unique object (by HashCode), ensuring tasks are executed in order
     private readonly ConcurrentDictionary<int, ConcurrentQueue<Func<Task<T1>>>> _queues = new();
 
-    public async Task Enqueue(T value, Func<T, Task<T1>> func)
+    public async Task<T1> Enqueue(T value, Func<T, Task<T1>> func)
     {
         if (value == null)
         {
@@ -22,9 +22,25 @@ public class OpportunityProcessor<T, T1> where T : new()
         ConcurrentQueue<Func<Task<T1>>> queue = _queues.GetOrAdd(uniqueHashCode, _ => new ConcurrentQueue<Func<Task<T1>>>());
         SemaphoreSlim semaphore = _locks.GetOrAdd(uniqueHashCode, _ => new SemaphoreSlim(1, 1));
 
-        queue.Enqueue(async () => await func(value));
+        TaskCompletionSource<T1> tcs = new();
+        queue.Enqueue(async () =>
+        {
+            try
+            {
+                T1 result = await func(value);
+                tcs.SetResult(result);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                tcs.SetException(ex);
+                throw;
+            }
+        });
 
         await ProcessQueue(semaphore, queue);
+
+        return await tcs.Task;
     }
 
     // ProcessQueue method attempts to acquire the semaphore (ensuring that only one thread processes the queue at a time).
